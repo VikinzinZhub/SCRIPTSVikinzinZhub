@@ -1,0 +1,307 @@
+-- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Player = LocalPlayer
+
+-- Sistema de Persistência
+local SavePath = "VikinzinZ_Config.json"
+local function SaveConfig(data)
+    if writefile then writefile(SavePath, HttpService:JSONEncode(data)) end
+end
+
+local function LoadConfig()
+    if isfile and isfile(SavePath) then
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(readfile(SavePath))
+        end)
+        if success and result then return result end
+    end
+    return {AutoBanana = false, AutoWin = false, ColetaSpeed = 0.05}
+end
+
+getgenv().VikinzinZ_Storage = LoadConfig()
+
+-- ─── FUNÇÃO PARA PASSAR A BOMBA ──────────────────────
+local function TeleportToNearest()
+    local myHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+    local nearestPlayer, shortestDistance = nil, math.huge
+    for _, other in pairs(Players:GetPlayers()) do
+        if other ~= Player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
+            local bomb = workspace:FindFirstChild("Bomb")
+            if bomb and bomb:FindFirstChild(other.Name) then continue end
+            
+            local dist = (other.Character.HumanoidRootPart.Position - myHRP.Position).Magnitude
+            if dist < shortestDistance then
+                shortestDistance = dist
+                nearestPlayer = other.Character.HumanoidRootPart
+            end
+        end
+    end
+    if nearestPlayer then myHRP.CFrame = nearestPlayer.CFrame end
+end
+
+-- ─── SEU MENU CONFIGURADO (SEM BUG DO QUADRADO) ───────
+local VikinzinZ = Instance.new("ScreenGui")
+VikinzinZ.Name = "VikinzinZ_Universal_Hub"
+VikinzinZ.Parent = game:GetService("CoreGui")
+VikinzinZ.IgnoreGuiInset = true
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Parent = VikinzinZ
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+Main.Position = UDim2.new(0.5, -165, 0.5, -125)
+Main.Size = UDim2.new(0, 330, 0, 260)
+Main.ClipsDescendants = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(110, 50, 255)
+Stroke.Thickness = 1.8
+
+-- ─── HEADER ──────────────────────────────────────────
+local Header = Instance.new("Frame", Main)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundTransparency = 1
+
+local Title = Instance.new("TextLabel", Header)
+Title.Text = "VIKINZINZ HUB"
+Title.Font = "GothamBold"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextSize = 14
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(0, 150, 1, 0)
+Title.TextXAlignment = "Left"
+Title.BackgroundTransparency = 1
+
+local StateBtn = Instance.new("TextButton", Header)
+StateBtn.Text = "-"
+StateBtn.Size = UDim2.new(0, 28, 0, 28)
+StateBtn.Position = UDim2.new(1, -65, 0, 6)
+StateBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+StateBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", StateBtn).CornerRadius = UDim.new(1, 0)
+
+local Close = Instance.new("TextButton", Header)
+Close.Text = "X"
+Close.Size = UDim2.new(0, 28, 0, 28)
+Close.Position = UDim2.new(1, -33, 0, 6)
+Close.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+Close.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", Close).CornerRadius = UDim.new(1, 0)
+
+-- ─── CONTAINER (ROLAGEM) ──────────────────────────────
+local Container = Instance.new("ScrollingFrame", Main)
+Container.Size = UDim2.new(1, -20, 1, -70)
+Container.Position = UDim2.new(0, 10, 0, 45)
+Container.BackgroundTransparency = 1
+Container.ScrollBarThickness = 2
+Container.CanvasSize = UDim2.new(0,0,0,0)
+
+local Layout = Instance.new("UIListLayout", Container)
+Layout.Padding = UDim.new(0, 8)
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Container.CanvasSize = UDim2.new(0,0,0, Layout.AbsoluteContentSize.Y + 10)
+end)
+
+-- ─── ASSINATURA (By VikinzinZ) ────────────────────────
+local Credits = Instance.new("TextLabel", Main)
+Credits.Text = "by VikinzinZ"
+Credits.Size = UDim2.new(0, 100, 0, 20)
+Credits.Position = UDim2.new(1, -110, 1, -22)
+Credits.BackgroundTransparency = 1
+Credits.Font = "GothamMedium"
+Credits.TextSize = 10
+Credits.TextColor3 = Color3.fromRGB(80, 80, 100)
+Credits.TextXAlignment = "Right"
+
+-- ─── INJETOR DE BOTÕES DO SEU MENU ─────────────────────
+function CreateToggle(text, default, callback)
+    local f = Instance.new("Frame", Container)
+    f.Size = UDim2.new(1, 0, 0, 42)
+    f.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
+    Instance.new("UICorner", f)
+    
+    local l = Instance.new("TextLabel", f)
+    l.Text = text
+    l.Size = UDim2.new(1, -60, 1, 0)
+    l.Position = UDim2.new(0, 12, 0, 0)
+    l.BackgroundTransparency = 1
+    l.TextColor3 = Color3.new(0.9, 0.9, 0.9); l.Font = "GothamMedium"; l.TextSize = 13; l.TextXAlignment = "Left"
+
+    local b = Instance.new("TextButton", f)
+    b.Size = UDim2.new(0, 42, 0, 22); b.Position = UDim2.new(1, -50, 0.5, -11)
+    b.Text = default and "ON" or "OFF"
+    b.BackgroundColor3 = default and Color3.fromRGB(110, 50, 255) or Color3.fromRGB(45, 45, 55)
+    b.Font = "GothamBold"; b.TextColor3 = Color3.new(1,1,1); b.TextSize = 9
+    Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
+    
+    local active = default
+    b.MouseButton1Click:Connect(function()
+        active = not active
+        b.Text = active and "ON" or "OFF"
+        b.BackgroundColor3 = active and Color3.fromRGB(110, 50, 255) or Color3.fromRGB(45, 45, 55)
+        callback(active)
+    end)
+end
+
+function CreateButton(text, callback)
+    local f = Instance.new("Frame", Container)
+    f.Size = UDim2.new(1, 0, 0, 42); f.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
+    Instance.new("UICorner", f)
+    local b = Instance.new("TextButton", f)
+    b.Size = UDim2.new(1, -20, 0, 30); b.Position = UDim2.new(0, 10, 0.5, -15)
+    b.BackgroundColor3 = Color3.fromRGB(110, 50, 255); b.Text = text
+    b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 11
+    Instance.new("UICorner", b); b.MouseButton1Click:Connect(callback)
+end
+
+-- ─── LÓGICA DO ÍMÃ MAGNÉTICO INFINITO ────────────────
+local function AutoColetar()
+    while getgenv().VikinzinZ_Storage.AutoBanana do
+        local character = Player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local bananasFolder = workspace:FindFirstChild("Bananas")
+        
+        if hrp and bananasFolder then
+            local bananas = bananasFolder:GetChildren()
+            for _, b in pairs(bananas) do
+                if not getgenv().VikinzinZ_Storage.AutoBanana then break end
+                
+                if b:IsA("BasePart") then
+                    b.CFrame = hrp.CFrame
+                elseif b:IsA("Model") then
+                    b:ScaleTo(1)
+                    b:PivotTo(hrp.CFrame)
+                end
+                
+                local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
+                if touch and character:FindFirstChild("LeftFoot") then
+                    firetouchinterest(character.LeftFoot, b, 0)
+                    firetouchinterest(character.LeftFoot, b, 1)
+                end
+                task.wait(getgenv().VikinzinZ_Storage.ColetaSpeed)
+            end
+        end
+        task.wait(0.1)
+    end
+end
+
+-- ─── LÓGICA DO AUTO WIN COM ULTRA TRAVA (110 STUDS) ───
+local noGrav = nil
+local noGravAtivo = false
+
+local function LoopAutoWin()
+    while getgenv().VikinzinZ_Storage.AutoWin do
+        local myCharacter = Player.Character
+        local myHRP = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+        local bombFolder = workspace:FindFirstChild("Bomb")
+        
+        if myHRP and bombFolder then
+            if bombFolder:FindFirstChild(Player.Name) then
+                if noGravAtivo then
+                    if noGrav then noGrav:Destroy() noGrav = nil end
+                    noGravAtivo = false
+                end
+                TeleportToNearest()
+            else
+                local perigoPerto = false
+                for _, bomber in pairs(bombFolder:GetChildren()) do
+                    if bomber:IsA("Model") and bomber:FindFirstChild("HumanoidRootPart") and bomber.Name ~= Player.Name then
+                        local posInimigo = Vector3.new(bomber.HumanoidRootPart.Position.X, 0, bomber.HumanoidRootPart.Position.Z)
+                        local posMinha = Vector3.new(myHRP.Position.X, 0, myHRP.Position.Z)
+                        local dist = (posInimigo - posMinha).Magnitude
+                        
+                        if dist < 22 then perigoPerto = true break end
+                    end
+                end
+                
+                if perigoPerto then
+                    if not noGravAtivo then
+                        myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 110, 0)
+                        task.wait(0.05)
+                        noGrav = Instance.new("BodyVelocity")
+                        noGrav.Velocity = Vector3.new(0, 0, 0)
+                        noGrav.MaxForce = Vector3.new(0, math.huge, 0)
+                        noGrav.Parent = myHRP
+                        noGravAtivo = true
+                    end
+                else
+                    if noGravAtivo then
+                        if noGrav then noGrav:Destroy() noGrav = nil end
+                        noGravAtivo = false
+                    end
+                end
+            end
+        else
+            if noGravAtivo then
+                if noGrav then noGrav:Destroy() noGrav = nil end
+                noGravAtivo = false
+            end
+        end
+        task.wait(0.1)
+    end
+    if noGrav then noGrav:Destroy() noGrav = nil end
+    noGravAtivo = false
+end
+
+-- ─── NOVA FUNÇÃO: REMOVER TEXTURAS DE TUDO (FPS BOOST) ──
+local function RemoverTexturas()
+    for _, objeto in pairs(workspace:GetDescendants()) do
+        if objeto:IsA("Texture") or objeto:IsA("Decal") then
+            objeto:Destroy()
+        elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then
+            objeto.Material = Enum.Material.SmoothPlastic
+        end
+    end
+end
+
+-- ─── BOTÕES ATRIBUÍDOS AO SEU CONTAINER ────────────────
+CreateToggle("Ímã Magnético de Bananas 🍌🧲", getgenv().VikinzinZ_Storage.AutoBanana, function(state)
+    getgenv().VikinzinZ_Storage.AutoBanana = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    if state then task.spawn(AutoColetar) end
+end)
+
+CreateToggle("Auto Win AFK (Anti-Bomba) 🏆💣", getgenv().VikinzinZ_Storage.AutoWin, function(state)
+    getgenv().VikinzinZ_Storage.AutoWin = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    if state then task.spawn(LoopAutoWin) end
+end)
+
+CreateButton("Remover Texturas do Mapa 🏁", function()
+    RemoverTexturas()
+end)
+
+-- ─── LÓGICA DE MINIMIZAR E ARRASTAR DO SEU MENU ────────
+local isMin = false
+StateBtn.MouseButton1Click:Connect(function()
+    isMin = not isMin
+    Main:TweenSize(isMin and UDim2.new(0, 330, 0, 40) or UDim2.new(0, 330, 0, 260), "Out", "Quad", 0.3, true)
+    Container.Visible = not isMin
+    Credits.Visible = not isMin
+    StateBtn.Text = isMin and "+" or "-"
+    StateBtn.BackgroundColor3 = isMin and Color3.fromRGB(0, 180, 120) or Color3.fromRGB(40, 40, 55)
+end)
+
+local UIS = game:GetService("UserInputService")
+local drag, dStart, sPos
+Main.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        drag = true; dStart = i.Position; sPos = Main.Position
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local delta = i.Position - dStart
+        Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y)
+    end
+end)
+UIS.InputEnded:Connect(function() drag = false end)
+Close.MouseButton1Click:Connect(function() VikinzinZ:Destroy() end)
+
+-- ─── REATIVADORES AUTOMÁTICOS ─────────────────────────
+if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(1) task.spawn(AutoColetar) end
+if getgenv().VikinzinZ_Storage.AutoWin then task.wait(1) task.spawn(LoopAutoWin) end
