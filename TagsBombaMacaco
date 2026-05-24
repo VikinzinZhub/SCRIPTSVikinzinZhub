@@ -279,7 +279,6 @@ local stabilityForce = nil
 
 local function LoopAutoWin()
     while getgenv().VikinzinZ_Storage.AutoWin do
-        -- Se o botão manual estiver ativo, o AutoWin deixa ele mandar na altura (exceto se pegar a bomba)
         local bombFolder = workspace:FindFirstChild("Bomb")
         local comBomba = bombFolder and bombFolder:FindFirstChild(Player.Name)
 
@@ -354,7 +353,7 @@ local function LoopAutoWin()
     if not getgenv().VikinzinZ_ManualSky then SetNoclip(false) end
 end
 
--- ─── LÓGICA DO BOTÃO MANUAL "V" CORRIGIDA (BYPASS ANTI-BOMBA) ───
+-- ─── LÓGICA DO BOTÃO MANUAL "V" (BYPASS ANTI-BOMBA) ───
 getgenv().VikinzinZ_ManualSky = false
 
 local PanicGui = Instance.new("ScreenGui")
@@ -393,7 +392,6 @@ UIS.InputChanged:Connect(function(i)
 end)
 UIS.InputEnded:Connect(function() pDrag = false end)
 
--- Sistema Loop do Botão V com Varredura de Segurança contra Bomba
 PanicBtn.MouseButton1Click:Connect(function()
     local char = Player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -412,19 +410,16 @@ PanicBtn.MouseButton1Click:Connect(function()
             stabilityForce.Parent = hrp
         end
         
-        -- Loop Inteligente: Fica a 400 studs mas CHECA se pegou a bomba de segundo em segundo
         task.spawn(function()
             while getgenv().VikinzinZ_ManualSky and hrp and hrp.Parent do
                 local bombFolder = workspace:FindFirstChild("Bomb")
                 local estouComABomba = bombFolder and bombFolder:FindFirstChild(Player.Name)
                 
                 if estouComABomba then
-                    -- EMERGÊNCIA: Libera a física e descarrega a bomba no cara!
                     stabilityForce.MaxForce = Vector3.new(0, 0, 0)
                     SetNoclip(false)
                     TeleportToNearest()
                 else
-                    -- SEGURO: Trava totalmente imóvel nos 400 studs
                     SetNoclip(true)
                     stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     hrp.CFrame = CFrame.new(hrp.Position.X, 400, hrp.Position.Z)
@@ -455,7 +450,7 @@ local function RemoverTextTextures()
     end
 end
 
--- ─── ADICIONANDO COMPONENTES NA INTERFACE ─────────────
+-- ─── INJEÇÃO DOS BOTÕES NO MENU PRINCIPAL ─────────────
 CreateToggle("Ímã Magnético de Bananas 🍌🧲", getgenv().VikinzinZ_Storage.AutoBanana, function(state)
     getgenv().VikinzinZ_Storage.AutoBanana = state
     SaveConfig(getgenv().VikinzinZ_Storage)
@@ -500,4 +495,5 @@ UIS.InputEnded:Connect(function() MainDrag = false end)
 Close.MouseButton1Click:Connect(function() VikinzinZ:Destroy() PanicGui:Destroy() end)
 
 -- Reativadores automáticos pós-load
-if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(1) tas
+if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(1) task.spawn(AutoColetar) end
+if getgenv().VikinzinZ_Storage.AutoWin then task.wait(1) task.spawn(LoopAutoWin) end
