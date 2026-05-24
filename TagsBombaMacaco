@@ -494,7 +494,7 @@ function CreateButton(text, callback)
     Instance.new("UICorner", b); b.MouseButton1Click:Connect(callback)
 end
 
--- ─── NOVA LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO EM MASSA ─────
+-- ─── LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO EM MASSA ─────
 local function AutoColetar()
     while getgenv().VikinzinZ_Storage.AutoBanana do
         local character = Player.Character
@@ -504,7 +504,6 @@ local function AutoColetar()
         if hrp and bananasFolder then
             local bananas = bananasFolder:GetChildren()
             
-            -- Teleporta e processa TODAS as bananas existentes no mesmo frame (sem yield interno)
             for _, b in pairs(bananas) do
                 if b:IsA("BasePart") then
                     b.CFrame = hrp.CFrame
@@ -518,4 +517,168 @@ local function AutoColetar()
                     firetouchinterest(character.LeftFoot, b, 0)
                     firetouchinterest(character.LeftFoot, b, 1)
                 end
-  
+            end
+        end
+        task.wait(getgenv().VikinzinZ_Storage.ColetaSpeed)
+    end
+end
+
+-- ─── LÓGICA DO AFK MANUAL / PANIC BUTTON ────────────────────────
+getgenv().VikinzinZ_ManualSky = false
+local PanicGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+PanicGui.Name = "VikinzinZ_Panic_Button"
+
+local PanicBtn = Instance.new("TextButton", PanicGui)
+PanicBtn.Name = "PanicButton"
+PanicBtn.Size = UDim2.new(0, 45, 0, 45)
+PanicBtn.Position = UDim2.new(0.85, 0, 0.25, 0)
+PanicBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+PanicBtn.Text = "AFK"
+PanicBtn.Font = Enum.Font.SourceSans
+PanicBtn.TextColor3 = Color3.new(1, 1, 1)
+PanicBtn.TextSize = 14
+Instance.new("UICorner", PanicBtn).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", PanicBtn).Color = Color3.new(1, 1, 1)
+
+local pDrag, pStart, pPos
+PanicBtn.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        pDrag = true; pStart = i.Position; pPos = PanicBtn.Position
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if pDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local delta = i.Position - mStart
+        PanicBtn.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + delta.X, pPos.Y.Scale, pPos.Y.Offset + delta.Y)
+    end
+end)
+UIS.InputEnded:Connect(function() pDrag = false end)
+
+PanicBtn.MouseButton1Click:Connect(function()
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    getgenv().VikinzinZ_ManualSky = not getgenv().VikinzinZ_ManualSky
+    
+    if getgenv().VikinzinZ_ManualSky then
+        PanicBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
+        SetNoclip(true)
+        if not stabilityForce or stabilityForce.Parent ~= hrp then
+            if stabilityForce then stabilityForce:Destroy() end
+            stabilityForce = Instance.new("BodyVelocity")
+            stabilityForce.Velocity = Vector3.new(0, 0, 0)
+            stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
+            stabilityForce.Parent = hrp
+        end
+        task.spawn(function()
+            while getgenv().VikinzinZ_ManualSky and hrp and hrp.Parent do
+                local bombFolder = workspace:FindFirstChild("Bomb")
+                local estouComABomba = bombFolder and bombFolder:FindFirstChild(Player.Name)
+                if estouComABomba then
+                    stabilityForce.MaxForce = Vector3.new(0, 0, 0)
+                    SetNoclip(false)
+                    TeleportToNearest()
+                else
+                    SetNoclip(true)
+                    stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                    hrp.CFrame = CFrame.new(hrp.Position.X, 400, hrp.Position.Z)
+                    hrp.Velocity = Vector3.new(0,0,0)
+                end
+                task.wait(0.01)
+            end
+        end)
+    else
+        PanicBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        if not (getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb) then
+            if stabilityForce then stabilityForce:Destroy() stabilityForce = nil end
+            SetNoclip(false)
+        else
+            stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
+        end
+    end
+end)
+
+-- ─── INJEÇÃO DOS COMPONENTES DA UI ─────────────────────────────
+CreateToggle(Container, "Ímã Magnético de Bananas 🍌🧲", getgenv().VikinzinZ_Storage.AutoBanana, function(state)
+    getgenv().VikinzinZ_Storage.AutoBanana = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    if state then task.spawn(AutoColetar) end
+end)
+
+CreateToggle(Container, "Auto Remover Texturas (Novo Mapa) 🏁🔄", getgenv().VikinzinZ_Storage.AutoRemoveTextures, function(state)
+    getgenv().VikinzinZ_Storage.AutoRemoveTextures = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    if state then RemoverTextTextures() end
+end)
+
+-- Toggles no Mini Menu Compactado
+CreateToggle(MiniContainer, "Auto Fuga da Bomba 🏃‍♂️💣", getgenv().VikinzinZ_Storage.AutoFugaBomb, function(state)
+    getgenv().VikinzinZ_Storage.AutoFugaBomb = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    ForcarLoopMiniMenu()
+end)
+
+CreateToggle(MiniContainer, "Auto Grudar Nos Outros 😈🧲", getgenv().VikinzinZ_Storage.AutoAntiBomb, function(state)
+    getgenv().VikinzinZ_Storage.AutoAntiBomb = state
+    SaveConfig(getgenv().VikinzinZ_Storage)
+    ForcarLoopMiniMenu()
+end)
+
+CreateButton("Remover Texturas Agora (Forçado) 🔧", function()
+    RemoverTextTextures()
+end)
+
+-- ─── SISTEMA INDEPENDENTE DE ARRASTAR (MENU PRINCIPAL) ───
+local MainDrag = false
+local mStart, mPos
+Main.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        MainDrag = true; mStart = i.Position; mPos = Main.Position
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if MainDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local delta = i.Position - mStart
+        Main.Position = UDim2.new(mPos.X.Scale, mPos.X.Offset + delta.X, mPos.Y.Scale, mPos.Y.Offset + delta.Y)
+    end
+end)
+UIS.InputEnded:Connect(function() MainDrag = false end)
+
+-- ─── SISTEMA INDEPENDENTE DE ARRASTAR (MINI MENU) ─────────
+local MiniDrag = false
+local miStart, miPos
+MiniMain.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        MiniDrag = true; miStart = i.Position; miPos = MiniMain.Position
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if MiniDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local delta = i.Position - miStart
+        MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset + delta.X, miPos.Y.Scale, miPos.Y.Offset + delta.Y)
+    end
+end)
+UIS.InputEnded:Connect(function() MiniDrag = false end)
+
+-- Minimizar Menu Principal
+local isMin = false
+StateBtn.MouseButton1Click:Connect(function()
+    isMin = not isMin
+    Main:TweenSize(isMin and UDim2.new(0, 330, 0, 40) or UDim2.new(0, 330, 0, 200), "Out", "Quad", 0.3, true)
+    Container.Visible = not isMin
+    Credits.Visible = not isMin
+    StateBtn.Text = isMin and "+" or "-"
+    StateBtn.BackgroundColor3 = isMin and Color3.fromRGB(0, 180, 120) or Color3.fromRGB(40, 40, 55)
+end)
+
+Close.MouseButton1Click:Connect(function() 
+    VikinzinZ:Destroy() 
+    PanicGui:Destroy() 
+    if AntiLavaPlatform then AntiLavaPlatform:Destroy() end 
+end)
+
+-- Ativadores pós-load automáticos
+if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(1) task.spawn(AutoColetar) end
+if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.wait(1) task.spawn(LoopMiniMenuFunes) end
+if getgenv().VikinzinZ_Storage.AutoRemoveTextures then task.wait(1) RemoverTextTextures() end
