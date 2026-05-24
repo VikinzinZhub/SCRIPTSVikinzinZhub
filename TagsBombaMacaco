@@ -494,7 +494,7 @@ function CreateButton(text, callback)
     Instance.new("UICorner", b); b.MouseButton1Click:Connect(callback)
 end
 
--- ─── LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO EM MASSA ─────
+-- ─── NOVA LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO EM MASSA ─────
 local function AutoColetar()
     while getgenv().VikinzinZ_Storage.AutoBanana do
         local character = Player.Character
@@ -504,6 +504,7 @@ local function AutoColetar()
         if hrp and bananasFolder then
             local bananas = bananasFolder:GetChildren()
             
+            -- Teleporta e processa TODAS as bananas existentes no mesmo frame (sem yield interno)
             for _, b in pairs(bananas) do
                 if b:IsA("BasePart") then
                     b.CFrame = hrp.CFrame
@@ -519,6 +520,7 @@ local function AutoColetar()
                 end
             end
         end
+        -- Pequeno delay de segurança global para não crashar o jogo enquanto espera novos spawns
         task.wait(getgenv().VikinzinZ_Storage.ColetaSpeed)
     end
 end
@@ -548,7 +550,7 @@ PanicBtn.InputBegan:Connect(function(i)
 end)
 UIS.InputChanged:Connect(function(i)
     if pDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-        local delta = i.Position - mStart
+        local delta = i.Position - pStart
         PanicBtn.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + delta.X, pPos.Y.Scale, pPos.Y.Offset + delta.Y)
     end
 end)
