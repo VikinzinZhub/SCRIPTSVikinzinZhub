@@ -1,15 +1,16 @@
--- ─── EVITAR DUPLICAÇÃO DE CONTROLE E INTERFACES ───────────────────
-if getgenv().VikinzinZ_Carregado then
-    pcall(function()
-        if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub") then
-            game:GetService("CoreGui")["VikinzinZ_Universal_Hub"]:Destroy()
+-- ─── SISTEMA BRUTO ANTI-DUPLICAÇÃO DE INTERFACES ───────────────────
+pcall(function()
+    for _, gui in pairs(game:GetService("CoreGui"):GetChildren()) do
+        if gui.Name == "VikinzinZ_Universal_Hub" or gui.Name == "VikinzinZ_Panic_Button" then
+            gui:Destroy()
         end
-        if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button") then
-            game:GetService("CoreGui")["VikinzinZ_Panic_Button"]:Destroy()
-        end
-    end)
-    task.wait(0.1)
-end
+    end
+    if workspace:FindFirstChild("VikinzinZ_AntiLava_Floor") then
+        workspace["VikinzinZ_AntiLava_Floor"]:Destroy()
+    end
+end)
+task.wait(0.15) -- Pausa estratégica para garantir que o CoreGui limpou a memória
+
 getgenv().VikinzinZ_Carregado = true
 
 -- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
@@ -172,11 +173,14 @@ LavaAvisoLabel.Font = "GothamBold"
 LavaAvisoLabel.TextSize = 22
 LavaAvisoLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
 LavaAvisoLabel.Visible = false
-Instance.new("UIStroke", LavaAvisoLabel).Thickness = 1.5
+local TextStroke = Instance.new("UIStroke", LavaAvisoLabel)
+TextStroke.Color = Color3.new(0, 0, 0)
+TextStroke.Thickness = 1.5
 
 local AntiLavaPlatform = nil
 local PLATFORM_HEIGHT_OFFSET = 40
 
+-- Gerenciador da Plataforma Anti-Lava Corrigido
 RunService.Heartbeat:Connect(function()
     local lavaY = GetLavaHeight()
     if lavaY ~= -math.huge then
@@ -186,9 +190,9 @@ RunService.Heartbeat:Connect(function()
             AntiLavaPlatform = Instance.new("Part")
             AntiLavaPlatform.Name = "VikinzinZ_AntiLava_Floor"
             AntiLavaPlatform.Size = Vector3.new(2000, 2, 2000)
-            AntiLavaPlatform.CoreGui = true
             AntiLavaPlatform.Anchored = true
             AntiLavaPlatform.Material = Enum.Material.SmoothPlastic
+            AntiLavaPlatform.Color = Color3.fromRGB(255, 255, 255)
             AntiLavaPlatform.Parent = workspace
         end
         AntiLavaPlatform.CFrame = CFrame.new(0, targetY, 0)
@@ -341,9 +345,8 @@ local function HopToSmallServer()
     pcall(function() TeleportService:Teleport(game.PlaceId, Player) end)
 end
 
--- ─── LÓGICA REFEITA: ÍMÃ SUPORTA COLETA DIRECTA PELO HOP SMALL ─────
+-- ─── LÓGICA DE AUTO COLETAR CORRIGIDA (SUPORTA AMBOS OS BOTÕES) ───
 local function AutoColetar()
-    -- O loop continua ativo se o Ímã OU o Hop Small estiverem ligados
     while getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall do
         local character = Player.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
@@ -353,19 +356,19 @@ local function AutoColetar()
             for _, b in pairs(bananasFolder:GetChildren()) do
                 if b:IsA("BasePart") then
                     b.CFrame = hrp.CFrame
-                local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
-                if touch and character:FindFirstChild("LeftFoot") then
-                    firetouchinterest(character.LeftFoot, b, 0)
-                    firetouchinterest(character.LeftFoot, b, 1)
-                end
+                    local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
+                    if touch and character:FindFirstChild("LeftFoot") then
+                        firetouchinterest(character.LeftFoot, b, 0)
+                        firetouchinterest(character.LeftFoot, b, 1)
+                    end
                 elseif b:IsA("Model") then
                     b:ScaleTo(1)
                     b:PivotTo(hrp.CFrame)
-                local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
-                if touch and character:FindFirstChild("LeftFoot") then
-                    firetouchinterest(character.LeftFoot, b, 0)
-                    firetouchinterest(character.LeftFoot, b, 1)
-                end
+                    local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
+                    if touch and character:FindFirstChild("LeftFoot") then
+                        firetouchinterest(character.LeftFoot, b, 0)
+                        firetouchinterest(character.LeftFoot, b, 1)
+                    end
                 end
             end
         end
@@ -373,10 +376,9 @@ local function AutoColetar()
     end
 end
 
--- ─── MONITORAMENTO DO HOP AUTOMÁTICO COM INTEGRAL DE COLETA ──────
+-- ─── MONITORAMENTO DO HOP AUTOMÁTICO INTEGRADO ───────────────────
 local function LoopAutoHopMonitor()
-    -- Sempre força a execução da coleta no exato momento que ativa o monitor do Hop
-    task.spawn(AutoColetar)
+    task.spawn(AutoColetar) -- Inicia o ímã imediatamente ao ligar o Hop Small
     
     while getgenv().VikinzinZ_Storage.AutoHopSmall do
         local bananasFolder = workspace:FindFirstChild("Bananas")
@@ -390,9 +392,8 @@ local function LoopAutoHopMonitor()
             end
         end
         
-        -- Se o mapa zerar, espera 1 segundo para sugar os últimos resíduos e teleporta
         if totalBananas == 0 and getgenv().VikinzinZ_Storage.AutoHopSmall then
-            task.wait(1.0)
+            task.wait(0.8) -- Margem de tempo para sugar quaisquer itens restantes
             SaveConfig(getgenv().VikinzinZ_Storage)
             HopToSmallServer()
             break 
