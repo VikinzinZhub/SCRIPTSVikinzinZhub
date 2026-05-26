@@ -1,15 +1,17 @@
--- ─── SISTEMA BRUTO ANTI-DUPLICAÇÃO DE INTERFACES ───────────────────
+-- ─── DESTRUÇÃO BRUTA DE INTERFACES ANTERIORES (ANTI-DUPLICAÇÃO) ───
+local CoreGui = game:GetService("CoreGui")
 pcall(function()
-    for _, gui in pairs(game:GetService("CoreGui"):GetChildren()) do
-        if gui.Name == "VikinzinZ_Universal_Hub" or gui.Name == "VikinzinZ_Panic_Button" then
-            gui:Destroy()
-        end
+    if CoreGui:FindFirstChild("VikinzinZ_Universal_Hub") then
+        CoreGui["VikinzinZ_Universal_Hub"]:Destroy()
+    end
+    if CoreGui:FindFirstChild("VikinzinZ_Panic_Button") then
+        CoreGui["VikinzinZ_Panic_Button"]:Destroy()
     end
     if workspace:FindFirstChild("VikinzinZ_AntiLava_Floor") then
         workspace["VikinzinZ_AntiLava_Floor"]:Destroy()
     end
 end)
-task.wait(0.15) -- Pausa estratégica para garantir que o CoreGui limpou a memória
+task.wait(0.2) -- Janela de tempo técnica essencial para o CoreGui processar a exclusão
 
 getgenv().VikinzinZ_Carregado = true
 
@@ -160,7 +162,7 @@ end
 -- Interface Base
 local VikinzinZ = Instance.new("ScreenGui")
 VikinzinZ.Name = "VikinzinZ_Universal_Hub"
-VikinzinZ.Parent = game:GetService("CoreGui")
+VikinzinZ.Parent = CoreGui
 VikinzinZ.IgnoreGuiInset = true
 
 local LavaAvisoLabel = Instance.new("TextLabel", VikinzinZ)
@@ -180,7 +182,7 @@ TextStroke.Thickness = 1.5
 local AntiLavaPlatform = nil
 local PLATFORM_HEIGHT_OFFSET = 40
 
--- Gerenciador da Plataforma Anti-Lava Corrigido
+-- Gerenciador Estável da Plataforma Anti-Lava
 RunService.Heartbeat:Connect(function()
     local lavaY = GetLavaHeight()
     if lavaY ~= -math.huge then
@@ -251,6 +253,7 @@ local function TeleportToNearest()
     end
 end
 
+-- ─── LÓGICA REFEITA E INDEPENDENTE DE REMOVER TEXTURAS ───────────────────
 local function LimparObjeto(objeto)
     if objeto:IsA("Texture") or objeto:IsA("Decal") then objeto:Destroy()
     elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then objeto.Material = Enum.Material.SmoothPlastic end
@@ -258,15 +261,21 @@ local function LimparObjeto(objeto)
 end
 
 local function RemoverTextTextures()
-    if not getgenv().VikinzinZ_Storage.AutoRemoveTextures then return end
-    pcall(function() for _, objeto in pairs(workspace:GetDescendants()) do LimparObjeto(objeto) end end)
+    pcall(function() 
+        for _, objeto in pairs(workspace:GetDescendants()) do 
+            LimparObjeto(objeto) 
+        end 
+    end)
 end
 
+-- Monitoramento estático do mapa para remoção de texturas automáticas
 local mapFolder = workspace:WaitForChild("Map", 10)
 if mapFolder then
     mapFolder.ChildAdded:Connect(function()
-        task.wait(0.5)
-        if getgenv().VikinzinZ_Storage.AutoRemoveTextures then RemoverTextTextures() end
+        task.wait(0.3)
+        if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoRemoveTextures then 
+            RemoverTextTextures() 
+        end
     end)
 end
 
@@ -345,7 +354,7 @@ local function HopToSmallServer()
     pcall(function() TeleportService:Teleport(game.PlaceId, Player) end)
 end
 
--- ─── LÓGICA DE AUTO COLETAR CORRIGIDA (SUPORTA AMBOS OS BOTÕES) ───
+-- ─── LÓGICA DE AUTO COLETAR INTEGRADA ──────────────────────────────────
 local function AutoColetar()
     while getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall do
         local character = Player.Character
@@ -376,9 +385,9 @@ local function AutoColetar()
     end
 end
 
--- ─── MONITORAMENTO DO HOP AUTOMÁTICO INTEGRADO ───────────────────
+-- ─── MONITORAMENTO DO HOP AUTOMÁTICO REFINADO ───────────────────────────
 local function LoopAutoHopMonitor()
-    task.spawn(AutoColetar) -- Inicia o ímã imediatamente ao ligar o Hop Small
+    task.spawn(AutoColetar) 
     
     while getgenv().VikinzinZ_Storage.AutoHopSmall do
         local bananasFolder = workspace:FindFirstChild("Bananas")
@@ -393,7 +402,7 @@ local function LoopAutoHopMonitor()
         end
         
         if totalBananas == 0 and getgenv().VikinzinZ_Storage.AutoHopSmall then
-            task.wait(0.8) -- Margem de tempo para sugar quaisquer itens restantes
+            task.wait(0.8) 
             SaveConfig(getgenv().VikinzinZ_Storage)
             HopToSmallServer()
             break 
@@ -571,7 +580,7 @@ end
 
 -- Botão AFK / Modo Fantasma
 getgenv().VikinzinZ_ManualSky = false
-local PanicGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local PanicGui = Instance.new("ScreenGui", CoreGui)
 PanicGui.Name = "VikinzinZ_Panic_Button"
 local PanicBtn = Instance.new("TextButton", PanicGui)
 PanicBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -684,7 +693,7 @@ local MiniDrag, miStart, miPos = false
 MiniMain.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then MiniDrag = true miStart = i.Position miPos = MiniMain.Position end end)
 UIS.InputChanged:Connect(function(i)
     if MiniDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-        local delta = i.Position - miStart MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset + delta.X, miPos.Y.Scale, miPos.Y.Offset + delta.Y)
+        local delta = miStart - i.Position MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset - delta.X, miPos.Y.Scale, miPos.Y.Offset - delta.Y)
     end
 end)
 UIS.InputEnded:Connect(function() MiniDrag = false end)
