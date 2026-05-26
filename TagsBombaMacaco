@@ -1,3 +1,11 @@
+-- ─── EVITAR DUPLICAÇÃO DE GUI (RESOLVE O PROBLEMA DAS DUAS GUIS JUNTAS) ───
+if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub") then
+    game:GetService("CoreGui")["VikinzinZ_Universal_Hub"]:Destroy()
+end
+if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button") then
+    game:GetService("CoreGui")["VikinzinZ_Panic_Button"]:Destroy()
+end
+
 -- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -42,7 +50,6 @@ getgenv().VikinzinZ_Storage = LoadConfig()
 
 -- ─── SISTEMA ULTRA AUTO RE-EXECUTE (APENAS SE ATIVADO) ──────────────────
 local function AplicarAutoExecuteTeleport()
-    -- Garante estritamente que a função SÓ roda se o botão estiver ativado
     if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoExecute == true then
         local scriptRaw = [[
             repeat task.wait() until game:IsLoaded()
@@ -288,18 +295,36 @@ local function TeleportToNearest()
     end
 end
 
--- ─── REMOVER TEXTURAS E VFX EM MASSA (ANTI-LAG) ──────────────────
+-- ─── REMOVER TEXTURAS E VFX EM MASSA (ANTI-LAG DO MAPA ATUAL E FUTUROS) ───
+local function LimparObjeto(objeto)
+    if objeto:IsA("Texture") or objeto:IsA("Decal") then
+        objeto:Destroy()
+    elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then
+        objeto.Material = Enum.Material.SmoothPlastic
+    end
+    if objeto:IsA("ParticleEmitter") or objeto:IsA("Smoke") or objeto:IsA("Fire") or objeto:IsA("Sparkles") or objeto:IsA("Trail") or objeto:IsA("Beam") then
+        objeto:Destroy()
+    end
+end
+
 local function RemoverTextTextures()
+    if not getgenv().VikinzinZ_Storage.AutoRemoveTextures then return end
+    
+    -- Limpa tudo que já existe no workspace
     pcall(function()
         for _, objeto in pairs(workspace:GetDescendants()) do
-            if objeto:IsA("Texture") or objeto:IsA("Decal") then
-                objeto:Destroy()
-            elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then
-                objeto.Material = Enum.Material.SmoothPlastic
-            end
-            if objeto:IsA("ParticleEmitter") or objeto:IsA("Smoke") or objeto:IsA("Fire") or objeto:IsA("Sparkles") or objeto:IsA("Trail") or objeto:IsA("Beam") then
-                objeto:Destroy()
-            end
+            LimparObjeto(objeto)
+        end
+    end)
+end
+
+-- MONITOR DE NOVOS MAPAS (Resolve o problema de não tirar a textura dos próximos mapas)
+local mapFolder = workspace:WaitForChild("Map", 10)
+if mapFolder then
+    mapFolder.ChildAdded:Connect(function(child)
+        task.wait(0.5) -- Espera o mapa carregar os blocos internamente
+        if getgenv().VikinzinZ_Storage.AutoRemoveTextures then
+            RemoverTextTextures()
         end
     end)
 end
