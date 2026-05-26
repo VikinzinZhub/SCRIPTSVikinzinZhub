@@ -1,10 +1,16 @@
--- ─── EVITAR DUPLICAÇÃO DE GUI (RESOLVE O PROBLEMA DAS DUAS GUIS JUNTAS) ───
-if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub") then
-    game:GetService("CoreGui")["VikinzinZ_Universal_Hub"]:Destroy()
+-- ─── EVITAR DUPLICAÇÃO DE CONTROLE E INTERFACES ───────────────────
+if getgenv().VikinzinZ_Carregado then
+    pcall(function()
+        if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub") then
+            game:GetService("CoreGui")["VikinzinZ_Universal_Hub"]:Destroy()
+        end
+        if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button") then
+            game:GetService("CoreGui")["VikinzinZ_Panic_Button"]:Destroy()
+        end
+    end)
+    task.wait(0.1)
 end
-if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button") then
-    game:GetService("CoreGui")["VikinzinZ_Panic_Button"]:Destroy()
-end
+getgenv().VikinzinZ_Carregado = true
 
 -- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
 local HttpService = game:GetService("HttpService")
@@ -16,10 +22,7 @@ local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 
--- Link do seu GitHub configurado para o Auto Re-Execute universal
 local GitHubLink = "https://raw.githubusercontent.com/VikinzinZhub/SCRIPTSVikinzinZhub/refs/heads/main/TagsBombaMacaco" 
-
--- Caminhos de Salvamento
 local SavePath = "VikinzinZ_Config.json"
 
 local function SaveConfig(data)
@@ -48,7 +51,7 @@ end
 
 getgenv().VikinzinZ_Storage = LoadConfig()
 
--- ─── SISTEMA ULTRA AUTO RE-EXECUTE (APENAS SE ATIVADO) ──────────────────
+-- ─── SISTEMA ULTRA AUTO RE-EXECUTE ──────────────────────────────────
 local function AplicarAutoExecuteTeleport()
     if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoExecute == true then
         local scriptRaw = [[
@@ -74,23 +77,21 @@ local function AplicarAutoExecuteTeleport()
     end
 end
 
--- ─── SINALIZADOR DOS REMOTES DE COMPRA ──────────────────────────
 local CasesRemote = game:GetService("ReplicatedStorage"):WaitForChild("ClientSource"):WaitForChild("Shared"):WaitForChild("Net"):WaitForChild("RE/Cases")
 
--- ─── SISTEMA ANTI-AFK INFINITO ──────────────────────────────────
+-- Anti-AFK
 pcall(function()
     for _, connection in pairs(getconnections(LocalPlayer.Idled)) do
         connection:Disable()
     end
 end)
-
 LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     task.wait(1)
     VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
--- ─── SISTEMA DE NOCLIP REAL ─────────────────────────────────────
+-- Noclip
 local noclipConnection = nil
 local function SetNoclip(active)
     if active then
@@ -98,9 +99,7 @@ local function SetNoclip(active)
             noclipConnection = RunService.Stepped:Connect(function()
                 if Player.Character then
                     for _, part in pairs(Player.Character:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = false end
                     end
                 end
             end)
@@ -113,10 +112,9 @@ local function SetNoclip(active)
     end
 end
 
--- ─── CACHE DA LAVA OTIMIZADO ────────────────────────────────────
+-- Cache Lava
 local cachedLava = nil
 local lastLavaCheck = 0
-
 local function GetLavaHeight()
     if tick() - lastLavaCheck < 0.3 then
         if cachedLava and cachedLava.Parent then
@@ -124,11 +122,9 @@ local function GetLavaHeight()
         end
         return -math.huge
     end
-    
     lastLavaCheck = tick()
     cachedLava = nil
     local lavaHeight = -math.huge
-    
     local mapFolder = workspace:FindFirstChild("Map")
     if mapFolder then
         for _, obj in pairs(mapFolder:GetDescendants()) do
@@ -142,7 +138,6 @@ local function GetLavaHeight()
     return lavaHeight
 end
 
--- ─── FUNÇÃO DE INVISIBILIDADE LOCAL (MODO FANTASMA) ──────────────
 local function SetGhostMode(active)
     local char = Player.Character
     if not char then return end
@@ -155,15 +150,13 @@ local function SetGhostMode(active)
                 part.Transparency = 1
             else
                 local orig = part:GetAttribute("OriginalTransparency")
-                if orig then
-                    part.Transparency = orig
-                end
+                if orig then part.Transparency = orig end
             end
         end
     end
 end
 
--- ─── INTERFACE DE CRIAÇÃO DOS MENUS (GUI BASE ORIGINAL) ─────────
+-- Interface Base
 local VikinzinZ = Instance.new("ScreenGui")
 VikinzinZ.Name = "VikinzinZ_Universal_Hub"
 VikinzinZ.Parent = game:GetService("CoreGui")
@@ -179,171 +172,108 @@ LavaAvisoLabel.Font = "GothamBold"
 LavaAvisoLabel.TextSize = 22
 LavaAvisoLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
 LavaAvisoLabel.Visible = false
+Instance.new("UIStroke", LavaAvisoLabel).Thickness = 1.5
 
-local TextStroke = Instance.new("UIStroke", LavaAvisoLabel)
-TextStroke.Color = Color3.new(0, 0, 0)
-TextStroke.Thickness = 1.5
-
--- ─── GERENCIADOR AUTOMÁTICO DA PLATAFORMA ───────────────────────
 local AntiLavaPlatform = nil
 local PLATFORM_HEIGHT_OFFSET = 40
 
-local function ControlAntiLavaPlatform()
-    RunService.Heartbeat:Connect(function()
-        local lavaY = GetLavaHeight()
-        
-        if lavaY ~= -math.huge then
-            local targetY = lavaY + PLATFORM_HEIGHT_OFFSET
-            LavaAvisoLabel.Visible = true
-            
-            if not AntiLavaPlatform or not AntiLavaPlatform.Parent then
-                AntiLavaPlatform = Instance.new("Part")
-                AntiLavaPlatform.Name = "VikinzinZ_AntiLava_Floor"
-                AntiLavaPlatform.Size = Vector3.new(2000, 2, 2000)
-                AntiLavaPlatform.Anchored = true
-                AntiLavaPlatform.Material = Enum.Material.SmoothPlastic
-                AntiLavaPlatform.Transparency = 0 
-                AntiLavaPlatform.Color = Color3.fromRGB(255, 255, 255) 
-                AntiLavaPlatform.Parent = workspace
-            end
-            AntiLavaPlatform.CFrame = CFrame.new(0, targetY, 0)
-            
-            local char = Player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp and hrp.Position.Y < (targetY - 1.5) then
-                hrp.CFrame = CFrame.new(hrp.Position.X, targetY + 4, hrp.Position.Z)
-                hrp.Velocity = Vector3.new(0, 0, 0)
-            end
-        else
-            LavaAvisoLabel.Visible = false
-            if AntiLavaPlatform then AntiLavaPlatform:Destroy() AntiLavaPlatform = nil end
+RunService.Heartbeat:Connect(function()
+    local lavaY = GetLavaHeight()
+    if lavaY ~= -math.huge then
+        local targetY = lavaY + PLATFORM_HEIGHT_OFFSET
+        LavaAvisoLabel.Visible = true
+        if not AntiLavaPlatform or not AntiLavaPlatform.Parent then
+            AntiLavaPlatform = Instance.new("Part")
+            AntiLavaPlatform.Name = "VikinzinZ_AntiLava_Floor"
+            AntiLavaPlatform.Size = Vector3.new(2000, 2, 2000)
+            AntiLavaPlatform.CoreGui = true
+            AntiLavaPlatform.Anchored = true
+            AntiLavaPlatform.Material = Enum.Material.SmoothPlastic
+            AntiLavaPlatform.Parent = workspace
         end
-    end)
-end
-task.spawn(ControlAntiLavaPlatform)
+        AntiLavaPlatform.CFrame = CFrame.new(0, targetY, 0)
+        local char = Player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp and hrp.Position.Y < (targetY - 1.5) then
+            hrp.CFrame = CFrame.new(hrp.Position.X, targetY + 4, hrp.Position.Z)
+            hrp.Velocity = Vector3.new(0, 0, 0)
+        end
+    else
+        LavaAvisoLabel.Visible = false
+        if AntiLavaPlatform then AntiLavaPlatform:Destroy() AntiLavaPlatform = nil end
+    end
+end)
 
--- ─── DETECTOR DE TEMPO RESTANTE DA BOMBA ─────────────────────────
 local function GetBombTime()
     local debris = workspace:FindFirstChild("Debris")
     local defaultFolder = debris and debris:FindFirstChild("Default")
     local bombTimer = defaultFolder and defaultFolder:FindFirstChild("BombTimer")
-    
     if bombTimer and bombTimer:IsA("ValueBase") then
         return tonumber(bombTimer.Value) or 99
     elseif bombTimer and bombTimer:IsA("BasePart") then
         local textLabel = bombTimer:FindFirstChildWhichIsA("TextLabel", true)
-        if textLabel then
-            local timeText = textLabel.Text:match("[%d%.]+")
-            return tonumber(timeText) or 99
-        end
+        if textLabel then return tonumber(textLabel.Text:match("[%d%.]+")) or 99 end
     end
     return 99
 end
 
--- ─── FUNÇÃO DE ÓRBITA COM PREDICT ───────────────────────────────
 local orbitAngle = 0
 local function TeleportToNearest()
     local myCharacter = Player.Character
     local myHRP = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
     if not myHRP then return end
-    
     local lavaY = GetLavaHeight()
-    local limiteAlturaMinima = -math.huge
-    if lavaY ~= -math.huge then
-        limiteAlturaMinima = lavaY + PLATFORM_HEIGHT_OFFSET - 5
-    end
-    
+    local limiteAlturaMinima = lavaY ~= -math.huge and (lavaY + PLATFORM_HEIGHT_OFFSET - 5) or -math.huge
     local nearestPlayer, shortestDistance = nil, math.huge
     for _, other in pairs(Players:GetPlayers()) do
         if other ~= Player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
             local char = other.Character
             local oHRP = char.HumanoidRootPart
             local hum = char:FindFirstChildOfClass("Humanoid")
-            local head = char:FindFirstChild("Head")
-            
             if not hum or hum.Health <= 0 then continue end
-            if head and head.Transparency > 0.5 then continue end
             if oHRP.Position.Y < limiteAlturaMinima or oHRP.Velocity.Y < -20 then continue end
-            
             local bomb = workspace:FindFirstChild("Bomb")
             if bomb and bomb:FindFirstChild(other.Name) then continue end
-            
             local dist = (oHRP.Position - myHRP.Position).Magnitude
-            if dist < shortestDistance then
-                shortestDistance = dist
-                nearestPlayer = oHRP
-            end
+            if dist < shortestDistance then shortestDistance = dist nearestPlayer = oHRP end
         end
     end
-    
     if nearestPlayer then 
         myHRP.Velocity = Vector3.new(0, 0, 0)
-        local radius = 3.2 
-        local speed = 0.40  
-        orbitAngle = orbitAngle + speed
-        
-        local oVelocity = nearestPlayer.Velocity
-        local predictPosition = nearestPlayer.Position + (oVelocity * 0.08)
-        local offsetX = math.cos(orbitAngle) * radius
-        local offsetZ = math.sin(orbitAngle) * radius
-        
-        myHRP.CFrame = CFrame.new(predictPosition + Vector3.new(offsetX, 0.5, offsetZ), predictPosition)
-        pcall(function()
-            firetouchinterest(myHRP, nearestPlayer, 0)
-            firetouchinterest(myHRP, nearestPlayer, 1)
-        end)
+        orbitAngle = orbitAngle + 0.40
+        local predictPosition = nearestPlayer.Position + (nearestPlayer.Velocity * 0.08)
+        myHRP.CFrame = CFrame.new(predictPosition + Vector3.new(math.cos(orbitAngle) * 3.2, 0.5, math.sin(orbitAngle) * 3.2), predictPosition)
+        pcall(function() firetouchinterest(myHRP, nearestPlayer, 0) firetouchinterest(myHRP, nearestPlayer, 1) end)
     end
 end
 
--- ─── REMOVER TEXTURAS E VFX EM MASSA (ANTI-LAG DO MAPA ATUAL E FUTUROS) ───
 local function LimparObjeto(objeto)
-    if objeto:IsA("Texture") or objeto:IsA("Decal") then
-        objeto:Destroy()
-    elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then
-        objeto.Material = Enum.Material.SmoothPlastic
-    end
-    if objeto:IsA("ParticleEmitter") or objeto:IsA("Smoke") or objeto:IsA("Fire") or objeto:IsA("Sparkles") or objeto:IsA("Trail") or objeto:IsA("Beam") then
-        objeto:Destroy()
-    end
+    if objeto:IsA("Texture") or objeto:IsA("Decal") then objeto:Destroy()
+    elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then objeto.Material = Enum.Material.SmoothPlastic end
+    if objeto:IsA("ParticleEmitter") or objeto:IsA("Smoke") or objeto:IsA("Fire") or objeto:IsA("Sparkles") or objeto:IsA("Trail") or objeto:IsA("Beam") then objeto:Destroy() end
 end
 
 local function RemoverTextTextures()
     if not getgenv().VikinzinZ_Storage.AutoRemoveTextures then return end
-    
-    -- Limpa tudo que já existe no workspace
-    pcall(function()
-        for _, objeto in pairs(workspace:GetDescendants()) do
-            LimparObjeto(objeto)
-        end
-    end)
+    pcall(function() for _, objeto in pairs(workspace:GetDescendants()) do LimparObjeto(objeto) end end)
 end
 
--- MONITOR DE NOVOS MAPAS (Resolve o problema de não tirar a textura dos próximos mapas)
 local mapFolder = workspace:WaitForChild("Map", 10)
 if mapFolder then
-    mapFolder.ChildAdded:Connect(function(child)
-        task.wait(0.5) -- Espera o mapa carregar os blocos internamente
-        if getgenv().VikinzinZ_Storage.AutoRemoveTextures then
-            RemoverTextTextures()
-        end
+    mapFolder.ChildAdded:Connect(function()
+        task.wait(0.5)
+        if getgenv().VikinzinZ_Storage.AutoRemoveTextures then RemoverTextTextures() end
     end)
 end
 
--- ─── LÓGICA ANTI-CONFLITO DO MINI MENU ───────────────────────────
 local stabilityForce = nil
 local function LoopMiniMenuFunes()
     while getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb do
         local bombFolder = workspace:FindFirstChild("Bomb")
         local comBomba = bombFolder and bombFolder:FindFirstChild(Player.Name)
-
-        if getgenv().VikinzinZ_ManualSky and not comBomba then 
-            task.wait(0.01) 
-            continue 
-        end
-
+        if getgenv().VikinzinZ_ManualSky and not comBomba then task.wait(0.01) continue end
         local myCharacter = Player.Character
         local myHRP = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
-        
         if myHRP and bombFolder then
             if not stabilityForce or stabilityForce.Parent ~= myHRP then
                 if stabilityForce then stabilityForce:Destroy() end
@@ -352,54 +282,34 @@ local function LoopMiniMenuFunes()
                 stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
                 stabilityForce.Parent = myHRP
             end
-
             if comBomba then
                 if getgenv().VikinzinZ_Storage.AutoAntiBomb then
-                    SetNoclip(true) 
-                    stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    TeleportToNearest()
-                else
-                    SetNoclip(false)
-                    stabilityForce.MaxForce = Vector3.new(0, 0, 0)
-                end
+                    SetNoclip(true) stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge) TeleportToNearest()
+                else SetNoclip(false) stabilityForce.MaxForce = Vector3.new(0, 0, 0) end
             else
                 local timeRemaining = GetBombTime()
                 local perigoPerto = false
-                
                 if getgenv().VikinzinZ_Storage.AutoFugaBomb then
                     for _, bomber in pairs(bombFolder:GetChildren()) do
                         if bomber:IsA("Model") and bomber:FindFirstChild("HumanoidRootPart") and bomber.Name ~= Player.Name then
-                            local posInimigo = Vector3.new(bomber.HumanoidRootPart.Position.X, 0, bomber.HumanoidRootPart.Position.Z)
-                            local posMinha = Vector3.new(myHRP.Position.X, 0, myHRP.Position.Z)
-                            local dist = (posInimigo - posMinha).Magnitude
-                            if dist < 25 then perigoPerto = true break end
+                            if (Vector3.new(bomber.HumanoidRootPart.Position.X, 0, bomber.HumanoidRootPart.Position.Z) - Vector3.new(myHRP.Position.X, 0, myHRP.Position.Z)).Magnitude < 25 then perigoPerto = true break end
                         end
                     end
                 end
-                
                 if (timeRemaining <= 5 or perigoPerto) and getgenv().VikinzinZ_Storage.AutoFugaBomb then
-                    SetNoclip(true) 
-                    stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
+                    SetNoclip(true) stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
                     myHRP.CFrame = CFrame.new(myHRP.Position.X, 400, myHRP.Position.Z)
-                else
-                    SetNoclip(false)
-                    stabilityForce.MaxForce = Vector3.new(0, 0, 0)
-                end
+                else SetNoclip(false) stabilityForce.MaxForce = Vector3.new(0, 0, 0) end
             end
-        else
-            if stabilityForce then stabilityForce:Destroy() stabilityForce = nil end
-        end
+        else if stabilityForce then stabilityForce:Destroy() stabilityForce = nil end end
         task.wait(0.01)
     end
 end
 
 local function ForcarLoopMiniMenu()
-    if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then
-        task.spawn(LoopMiniMenuFunes)
-    end
+    if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.spawn(LoopMiniMenuFunes) end
 end
 
--- ─── LÓGICAS DOS COMPRADORES AUTOMÁTICOS ─────────────────────────
 local function LoopAutoBuy1()
     while getgenv().VikinzinZ_Storage.AutoBuy1Case do
         pcall(function() CasesRemote:FireServer("Buy1", {Type = "Tail", Case = "Lapis Case"}) end)
@@ -414,15 +324,10 @@ local function LoopAutoBuy5()
     end
 end
 
--- ─── LÓGICA DE SERVIDOR PEQUENO COM AUTOEXEC PREVENTIVO ──────────
 local function HopToSmallServer()
     AplicarAutoExecuteTeleport() 
-    
     local apiURL = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    local success, serverData = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(apiURL))
-    end)
-    
+    local success, serverData = pcall(function() return HttpService:JSONDecode(game:HttpGet(apiURL)) end)
     if success and serverData and serverData.data then
         for _, server in pairs(serverData.data) do
             if server.id ~= game.JobId and tonumber(server.playing) < tonumber(server.maxPlayers) then
@@ -438,7 +343,7 @@ end
 
 -- ─── LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO ────────────────────
 local function AutoColetar()
-    while getgenv().VikinzinZ_Storage.AutoBanana do
+    while getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall do
         local character = Player.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
         local bananasFolder = workspace:FindFirstChild("Bananas")
@@ -462,8 +367,11 @@ local function AutoColetar()
     end
 end
 
--- ─── MONITORAMENTO DO HOP AUTOMÁTICO COM AUTOEXEC ────────────────
+-- ─── MONITORAMENTO DO HOP AUTOMÁTICO REFINADO ───────────────────
 local function LoopAutoHopMonitor()
+    -- Garante que o ímã de coletar seja ligado instantaneamente junto com o Hop Small
+    task.spawn(AutoColetar)
+    
     while getgenv().VikinzinZ_Storage.AutoHopSmall do
         local bananasFolder = workspace:FindFirstChild("Bananas")
         local totalBananas = 0
@@ -476,6 +384,7 @@ local function LoopAutoHopMonitor()
             end
         end
         
+        -- Se não restarem mais bananas no mapa, ele salva a configuração e pula de servidor
         if totalBananas == 0 and getgenv().VikinzinZ_Storage.AutoHopSmall then
             SaveConfig(getgenv().VikinzinZ_Storage)
             HopToSmallServer()
@@ -485,7 +394,7 @@ local function LoopAutoHopMonitor()
     end
 end
 
--- ─── MENU PRINCIPAL GUI (TAMANHOS FIXOS ORIGINAIS) ───────────────
+-- UI Design Principal
 local Main = Instance.new("Frame")
 Main.Name = "Main"
 Main.Parent = VikinzinZ
@@ -494,7 +403,6 @@ Main.Position = UDim2.new(0.5, -190, 0.5, -135)
 Main.Size = UDim2.new(0, 380, 0, 270)
 Main.ClipsDescendants = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-
 local Stroke = Instance.new("UIStroke", Main)
 Stroke.Color = Color3.fromRGB(110, 50, 255)
 Stroke.Thickness = 1.8
@@ -519,7 +427,6 @@ StateBtn.Size = UDim2.new(0, 26, 0, 26)
 StateBtn.Position = UDim2.new(1, -65, 0.5, -13)
 StateBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
 StateBtn.TextColor3 = Color3.new(1,1,1)
-StateBtn.TextSize = 14
 Instance.new("UICorner", StateBtn).CornerRadius = UDim.new(1, 0)
 
 local Close = Instance.new("TextButton", Header)
@@ -528,7 +435,6 @@ Close.Size = UDim2.new(0, 26, 0, 26)
 Close.Position = UDim2.new(1, -33, 0.5, -13)
 Close.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
 Close.TextColor3 = Color3.new(1,1,1)
-Close.TextSize = 13
 Instance.new("UICorner", Close).CornerRadius = UDim.new(1, 0)
 
 local Container = Instance.new("ScrollingFrame", Main)
@@ -554,7 +460,7 @@ Credits.TextSize = 11
 Credits.TextColor3 = Color3.fromRGB(80, 80, 100)
 Credits.TextXAlignment = "Right"
 
--- ─── MINI MENU RETRÁTIL ORIGINAL ───────────────────────────────
+-- Mini Menu Win Bomba
 local MiniMain = Instance.new("Frame")
 MiniMain.Name = "MiniMenuAutoWin"
 MiniMain.Parent = VikinzinZ
@@ -563,7 +469,6 @@ MiniMain.Position = UDim2.new(0.5, 205, 0.5, -135)
 MiniMain.Size = UDim2.new(0, 190, 0, 150)
 MiniMain.ClipsDescendants = true
 Instance.new("UICorner", MiniMain).CornerRadius = UDim.new(0, 10)
-
 local MiniStroke = Instance.new("UIStroke", MiniMain)
 MiniStroke.Color = Color3.fromRGB(110, 50, 255)
 MiniStroke.Thickness = 1.6
@@ -588,14 +493,12 @@ MiniStateBtn.Size = UDim2.new(0, 22, 0, 22)
 MiniStateBtn.Position = UDim2.new(1, -30, 0.5, -11)
 MiniStateBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
 MiniStateBtn.TextColor3 = Color3.new(1,1,1)
-MiniStateBtn.TextSize = 13
 Instance.new("UICorner", MiniStateBtn).CornerRadius = UDim.new(1, 0)
 
 local MiniContainer = Instance.new("Frame", MiniMain)
 MiniContainer.Size = UDim2.new(1, -16, 1, -40)
 MiniContainer.Position = UDim2.new(0, 8, 0, 38)
 MiniContainer.BackgroundTransparency = 1
-
 local MiniLayout = Instance.new("UIListLayout", MiniContainer)
 MiniLayout.Padding = UDim.new(0, 5)
 
@@ -608,13 +511,11 @@ MiniStateBtn.MouseButton1Click:Connect(function()
     MiniStateBtn.BackgroundColor3 = miniIsMin and Color3.fromRGB(0, 180, 120) or Color3.fromRGB(40, 40, 55)
 end)
 
--- ─── INJETORES DE COMPONENTES DA INTERFACE ORIGINAIS ──────────────
 function CreateToggle(parent, text, default, callback)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(1, 0, 0, 34)
     f.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
     Instance.new("UICorner", f)
-    
     local l = Instance.new("TextLabel", f)
     l.Text = text
     l.Size = UDim2.new(1, -65, 1, 0)
@@ -624,7 +525,6 @@ function CreateToggle(parent, text, default, callback)
     l.Font = "GothamMedium"
     l.TextSize = 12
     l.TextXAlignment = "Left"
-
     local b = Instance.new("TextButton", f)
     b.Size = UDim2.new(0, 45, 0, 20)
     b.Position = UDim2.new(1, -55, 0.5, -10)
@@ -634,7 +534,6 @@ function CreateToggle(parent, text, default, callback)
     b.TextColor3 = Color3.new(1,1,1)
     b.TextSize = 10
     Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
-    
     local active = default
     b.MouseButton1Click:Connect(function()
         active = not active
@@ -650,7 +549,6 @@ function CreateButton(text, callback)
     f.Size = UDim2.new(1, 0, 0, 36)
     f.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
     Instance.new("UICorner", f)
-    
     local b = Instance.new("TextButton", f)
     b.Size = UDim2.new(1, -16, 1, -10)
     b.Position = UDim2.new(0, 8, 0, 5)
@@ -663,11 +561,10 @@ function CreateButton(text, callback)
     b.MouseButton1Click:Connect(callback)
 end
 
--- ─── LÓGICA DO AFK MANUAL / PANIC BUTTON + MODO FANTASMA ────────
+-- Botão AFK / Modo Fantasma
 getgenv().VikinzinZ_ManualSky = false
 local PanicGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 PanicGui.Name = "VikinzinZ_Panic_Button"
-
 local PanicBtn = Instance.new("TextButton", PanicGui)
 PanicBtn.Size = UDim2.new(0, 42, 0, 42)
 PanicBtn.Position = UDim2.new(1, -60, 0, 80)
@@ -680,9 +577,7 @@ Instance.new("UICorner", PanicBtn).CornerRadius = UDim.new(1, 0)
 
 local pDrag, pStart, pPos
 PanicBtn.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-        pDrag = true; pStart = i.Position; pPos = PanicBtn.Position
-    end
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then pDrag = true pStart = i.Position pPos = PanicBtn.Position end
 end)
 UIS.InputChanged:Connect(function(i)
     if pDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
@@ -696,12 +591,9 @@ PanicBtn.MouseButton1Click:Connect(function()
     local char = Player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    
     getgenv().VikinzinZ_ManualSky = not getgenv().VikinzinZ_ManualSky
-    
     if getgenv().VikinzinZ_ManualSky then
-        PanicBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
-        SetNoclip(true)
+        PanicBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120) SetNoclip(true)
         if not stabilityForce or stabilityForce.Parent ~= hrp then
             if stabilityForce then stabilityForce:Destroy() end
             stabilityForce = Instance.new("BodyVelocity")
@@ -712,145 +604,102 @@ PanicBtn.MouseButton1Click:Connect(function()
         task.spawn(function()
             while getgenv().VikinzinZ_ManualSky and hrp and hrp.Parent do
                 local bombFolder = workspace:FindFirstChild("Bomb")
-                local estouComABomba = bombFolder and bombFolder:FindFirstChild(Player.Name)
-                if estouComABomba then
-                    stabilityForce.MaxForce = Vector3.new(0, 0, 0)
-                    SetNoclip(false)
-                    SetGhostMode(false) 
-                    TeleportToNearest()
+                if bombFolder and bombFolder:FindFirstChild(Player.Name) then
+                    stabilityForce.MaxForce = Vector3.new(0, 0, 0) SetNoclip(false) SetGhostMode(false) TeleportToNearest()
                 else
-                    SetNoclip(true)
-                    SetGhostMode(true) 
-                    stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    hrp.CFrame = CFrame.new(hrp.Position.X, 400, hrp.Position.Z)
-                    hrp.Velocity = Vector3.new(0,0,0)
+                    SetNoclip(true) SetGhostMode(true) stabilityForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                    hrp.CFrame = CFrame.new(hrp.Position.X, 400, hrp.Position.Z) hrp.Velocity = Vector3.new(0,0,0)
                 end
                 task.wait(0.01)
             end
         end)
     else
-        PanicBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        SetGhostMode(false) 
+        PanicBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40) SetGhostMode(false)
         if not (getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb) then
-            if stabilityForce then stabilityForce:Destroy() stabilityForce = nil end
-            SetNoclip(false)
-        else
-            stabilityForce.MaxForce = Vector3.new(0, math.huge, 0)
-        end
+            if stabilityForce then stabilityForce:Destroy() stabilityForce = nil end SetNoclip(false)
+        else stabilityForce.MaxForce = Vector3.new(0, math.huge, 0) end
     end
 end)
 
--- ─── INJEÇÃO DOS COMPONENTES DA UI ─────────────────────────────
+-- Injeção de Itens da GUI
 CreateToggle(Container, "Auto Executar Hub ⚙️", getgenv().VikinzinZ_Storage.AutoExecute, function(state)
-    getgenv().VikinzinZ_Storage.AutoExecute = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
-    if state then
-        AplicarAutoExecuteTeleport()
-    end
+    getgenv().VikinzinZ_Storage.AutoExecute = state SaveConfig(getgenv().VikinzinZ_Storage)
+    if state then AplicarAutoExecuteTeleport() end
 end)
 
 CreateToggle(Container, "Remover Texturas e VFX 🍌🚫🧲", getgenv().VikinzinZ_Storage.AutoRemoveTextures, function(state)
-    getgenv().VikinzinZ_Storage.AutoRemoveTextures = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
+    getgenv().VikinzinZ_Storage.AutoRemoveTextures = state SaveConfig(getgenv().VikinzinZ_Storage)
     if state then RemoverTextTextures() end
 end)
 
 CreateToggle(Container, "Ímã Magnético de Bananas 🍌🧲", getgenv().VikinzinZ_Storage.AutoBanana, function(state)
-    getgenv().VikinzinZ_Storage.AutoBanana = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
+    getgenv().VikinzinZ_Storage.AutoBanana = state SaveConfig(getgenv().VikinzinZ_Storage)
     if state then task.spawn(AutoColetar) end
 end)
 
 CreateToggle(Container, "Auto Comprar 1 Caixa 📦💎", getgenv().VikinzinZ_Storage.AutoBuy1Case, function(state)
-    getgenv().VikinzinZ_Storage.AutoBuy1Case = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
+    getgenv().VikinzinZ_Storage.AutoBuy1Case = state SaveConfig(getgenv().VikinzinZ_Storage)
     if state then task.spawn(LoopAutoBuy1) end
 end)
 
 CreateToggle(Container, "Auto Comprar 5 Caixas 📦🔥", getgenv().VikinzinZ_Storage.AutoBuy5Case, function(state)
-    getgenv().VikinzinZ_Storage.AutoBuy5Case = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
+    getgenv().VikinzinZ_Storage.AutoBuy5Case = state SaveConfig(getgenv().VikinzinZ_Storage)
     if state then task.spawn(LoopAutoBuy5) end
 end)
 
--- Toggles no Mini Menu Compactado
 CreateToggle(MiniContainer, "Auto Fuga da Bomba 🏃‍♂️💣", getgenv().VikinzinZ_Storage.AutoFugaBomb, function(state)
-    getgenv().VikinzinZ_Storage.AutoFugaBomb = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
-    ForcarLoopMiniMenu()
+    getgenv().VikinzinZ_Storage.AutoFugaBomb = state SaveConfig(getgenv().VikinzinZ_Storage) ForcarLoopMiniMenu()
 end)
 
 CreateToggle(MiniContainer, "Auto Grudar Nos Outros 😈🧲", getgenv().VikinzinZ_Storage.AutoAntiBomb, function(state)
-    getgenv().VikinzinZ_Storage.AutoAntiBomb = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
-    ForcarLoopMiniMenu()
+    getgenv().VikinzinZ_Storage.AutoAntiBomb = state SaveConfig(getgenv().VikinzinZ_Storage) ForcarLoopMiniMenu()
 end)
 
 CreateToggle(MiniContainer, "Auto Hop Small 🌍", getgenv().VikinzinZ_Storage.AutoHopSmall, function(state)
-    getgenv().VikinzinZ_Storage.AutoHopSmall = state
-    SaveConfig(getgenv().VikinzinZ_Storage)
+    getgenv().VikinzinZ_Storage.AutoHopSmall = state SaveConfig(getgenv().VikinzinZ_Storage)
     if state then task.spawn(LoopAutoHopMonitor) end
 end)
 
-CreateButton("Remover Texturas e VFX Agora 🔧", function()
-    RemoverTextTextures()
-end)
+CreateButton("Remover Texturas e VFX Agora 🔧", function() RemoverTextTextures() end)
 
--- ─── ARRASTADORES INDEPENDENTES (MÉTODO TRADICIONAL) ─────────────
+-- Arrastadores Mecânicos Tradicionais
 local MainDrag, mStart, mPos = false
-Main.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-        MainDrag = true; mStart = i.Position; mPos = Main.Position
-    end
-end)
+Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then MainDrag = true mStart = i.Position mPos = Main.Position end end)
 UIS.InputChanged:Connect(function(i)
     if MainDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-        local delta = i.Position - mStart
-        Main.Position = UDim2.new(mPos.X.Scale, mPos.X.Offset + delta.X, mPos.Y.Scale, mPos.Y.Offset + delta.Y)
+        local delta = i.Position - mStart Main.Position = UDim2.new(mPos.X.Scale, mPos.X.Offset + delta.X, mPos.Y.Scale, mPos.Y.Offset + delta.Y)
     end
 end)
 UIS.InputEnded:Connect(function() MainDrag = false end)
 
 local MiniDrag, miStart, miPos = false
-MiniMain.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-        MiniDrag = true; miStart = i.Position; miPos = MiniMain.Position
-    end
-end)
+MiniMain.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then MiniDrag = true miStart = i.Position miPos = MiniMain.Position end end)
 UIS.InputChanged:Connect(function(i)
     if MiniDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-        local delta = i.Position - miStart
-        MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset + delta.X, miPos.Y.Scale, miPos.Y.Offset + delta.Y)
+        local delta = i.Position - miStart MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset + delta.X, miPos.Y.Scale, miPos.Y.Offset + delta.Y)
     end
 end)
 UIS.InputEnded:Connect(function() MiniDrag = false end)
 
--- Minimizar Menu Principal
 local isMin = false
 StateBtn.MouseButton1Click:Connect(function()
     isMin = not isMin
     Main:TweenSize(isMin and UDim2.new(0, 380, 0, 40) or UDim2.new(0, 380, 0, 270), "Out", "Quad", 0.3, true)
-    Container.Visible = not isMin
-    Credits.Visible = not isMin
+    Container.Visible = not isMin Credits.Visible = not isMin
     StateBtn.Text = isMin and "+" or "-"
     StateBtn.BackgroundColor3 = isMin and Color3.fromRGB(0, 180, 120) or Color3.fromRGB(40, 40, 55)
 end)
 
 Close.MouseButton1Click:Connect(function() 
-    VikinzinZ:Destroy() 
-    PanicGui:Destroy() 
-    SetGhostMode(false)
-    if AntiLavaPlatform then AntiLavaPlatform:Destroy() end 
+    VikinzinZ:Destroy() PanicGui:Destroy() SetGhostMode(false)
+    if AntiLavaPlatform then AntiLavaPlatform:Destroy() end getgenv().VikinzinZ_Carregado = nil
 end)
 
--- Hook para interceptar teleporte iminente
 game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(State)
-    if State == Enum.TeleportState.Started then
-        AplicarAutoExecuteTeleport()
-    end
+    if State == Enum.TeleportState.Started then AplicarAutoExecuteTeleport() end
 end)
 
--- Ativadores pós-load automáticos (Configs Salvas)
+-- Ativadores Iniciais Automáticos salvos
 if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(0.5) task.spawn(AutoColetar) end
 if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.wait(0.5) task.spawn(LoopMiniMenuFunes) end
 if getgenv().VikinzinZ_Storage.AutoRemoveTextures then task.wait(0.5) RemoverTextTextures() end
