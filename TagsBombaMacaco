@@ -1,3 +1,17 @@
+-- ─── TRAVA ANTI-DUPLICAÇÃO DE INTERFACE ─────────────────
+if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub") then
+    game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Universal_Hub"):Destroy()
+end
+if game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button") then
+    game:GetService("CoreGui"):FindFirstChild("VikinzinZ_Panic_Button"):Destroy()
+end
+
+-- Trava de execução dupla na mesma sessão
+if getgenv().VikinzinZ_Carregado then 
+    return 
+end
+getgenv().VikinzinZ_Carregado = true
+
 -- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -811,6 +825,7 @@ StateBtn.MouseButton1Click:Connect(function()
 end)
 
 Close.MouseButton1Click:Connect(function() 
+    getgenv().VikinzinZ_Carregado = nil
     VikinzinZ:Destroy() 
     PanicGui:Destroy() 
     SetGhostMode(false)
@@ -824,7 +839,7 @@ game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(State)
     end
 end)
 
--- Ativadores pós-load automáticos corrigidos (Garante carregamento do mapa antes de rodar)
+-- Ativadores pós-load automáticos (Garante carregamento do mapa antes de rodar)
 task.spawn(function()
     if getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb or getgenv().VikinzinZ_Storage.AutoRemoveTextures or getgenv().VikinzinZ_Storage.AutoHopSmall then
         repeat task.wait() until game:IsLoaded()
