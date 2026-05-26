@@ -1,36 +1,40 @@
--- ─── DESTRUÇÃO BRUTA DE INTERFACES ANTERIORES (ANTI-DUPLICAÇÃO) ───
-local CoreGui = game:GetService("CoreGui")
-local function LimparMenusDuplicados()
-    local hubs Encontrados = 0
-    local panics Encontrados = 0
-    local limpadoresEncontrados = 0
+-- ─── SISTEMA DEFENSOR DE MEMÓRIA GLOBAL (ANTI-DUPLICAÇÃO 100% GARANTIDO) ───
+pcall(function()
+    -- Se o Hub Principal já existir na memória do executor, deleta o objeto direto
+    if getgenv().VikinzinZ_MainGui and getgenv().VikinzinZ_MainGui.Parent then
+        getgenv().VikinzinZ_MainGui:Destroy()
+    end
+    -- Se o Botão AFK já existir, deleta direto
+    if getgenv().VikinzinZ_PanicGui and getgenv().VikinzinZ_PanicGui.Parent then
+        getgenv().VikinzinZ_PanicGui:Destroy()
+    end
+    -- Se o Botão Limpar já existir, deleta direto
+    if getgenv().VikinzinZ_LimpadorGui and getgenv().VikinzinZ_LimpadorGui.Parent then
+        getgenv().VikinzinZ_LimpadorGui:Destroy()
+    end
+    -- Se a plataforma antiga de lava existir, deleta direto
+    if workspace:FindFirstChild("VikinzinZ_AntiLava_Floor") then
+        workspace["VikinzinZ_AntiLava_Floor"]:Destroy()
+    end
+end)
+task.wait(0.1)
+
+-- Função Suprema de Limpeza (Vinculada ao Novo Botão e Execução)
+local function LimparTelasDuplicadasDefinitivo()
+    pcall(function()
+        if getgenv().VikinzinZ_MainGui then getgenv().VikinzinZ_MainGui:Destroy() end
+        if getgenv().VikinzinZ_PanicGui then getgenv().VikinzinZ_PanicGui:Destroy() end
+        if getgenv().VikinzinZ_LimpadorGui then getgenv().VikinzinZ_LimpadorGui:Destroy() end
+    end)
     
+    -- Varredura secundária pesada caso o executor tenha clonado instâncias órfãs
+    local CoreGui = game:GetService("CoreGui")
     for _, gui in pairs(CoreGui:GetChildren()) do
-        if gui.Name == "VikinzinZ_Universal_Hub" then
-            hubsEncontrados = hubsEncontrados + 1
-            if hubsEncontrados > 1 then gui:Destroy() end
-        -- Mantém apenas o primeiro botão AFK
-        elseif gui.Name == "VikinzinZ_Panic_Button" then
-            panicsEncontrados = panicsEncontrados + 1
-            if panicsEncontrados > 1 then gui:Destroy() end
-        -- Mantém apenas o primeiro botão de Limpar
-        elseif gui.Name == "VikinzinZ_Limpador_Button" then
-            limpadoresEncontrados = limpadoresEncontrados + 1
-            if limpadoresEncontrados > 1 then gui:Destroy() end
+        if gui.Name == "VikinzinZ_Universal_Hub" or gui.Name == "VikinzinZ_Panic_Button" or gui.Name == "VikinzinZ_Limpador_Button" then
+            pcall(function() gui:Destroy() end)
         end
     end
 end
-
--- Executa a limpeza bruta inicial
-pcall(function()
-    if CoreGui:FindFirstChild("VikinzinZ_Universal_Hub") then CoreGui["VikinzinZ_Universal_Hub"]:Destroy() end
-    if CoreGui:FindFirstChild("VikinzinZ_Panic_Button") then CoreGui["VikinzinZ_Panic_Button"]:Destroy() end
-    if CoreGui:FindFirstChild("VikinzinZ_Limpador_Button") then CoreGui["VikinzinZ_Limpador_Button"]:Destroy() end
-    if workspace:FindFirstChild("VikinzinZ_AntiLava_Floor") then workspace["VikinzinZ_AntiLava_Floor"]:Destroy() end
-end)
-task.wait(0.2)
-
-getgenv().VikinzinZ_Carregado = true
 
 -- ─── CONFIGURAÇÕES GLOBAIS ───────────────────────────
 local HttpService = game:GetService("HttpService")
@@ -41,6 +45,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
+local CoreGui = game:GetService("CoreGui")
 
 local GitHubLink = "https://raw.githubusercontent.com/VikinzinZhub/SCRIPTSVikinzinZhub/refs/heads/main/TagsBombaMacaco" 
 local SavePath = "VikinzinZ_Config.json"
@@ -181,6 +186,7 @@ local VikinzinZ = Instance.new("ScreenGui")
 VikinzinZ.Name = "VikinzinZ_Universal_Hub"
 VikinzinZ.Parent = CoreGui
 VikinzinZ.IgnoreGuiInset = true
+getgenv().VikinzinZ_MainGui = VikinzinZ -- Registrado na memória global contra clones
 
 local LavaAvisoLabel = Instance.new("TextLabel", VikinzinZ)
 LavaAvisoLabel.Name = "LavaAviso"
@@ -270,7 +276,7 @@ local function TeleportToNearest()
     end
 end
 
--- ─── NOVO MONITOR TOTAL REMOVER TEXTURAS (CORRIGIDO PARA MUDANÇA DE MAPA DO VÍDEO) ───
+-- ─── MONITOR ESTÁTICO E DINÂMICO DE REMOVER TEXTURAS ───
 local function LimparObjeto(objeto)
     if objeto:IsA("Texture") or objeto:IsA("Decal") then objeto:Destroy()
     elseif objeto:IsA("BasePart") or objeto:IsA("MeshPart") then objeto.Material = Enum.Material.SmoothPlastic end
@@ -285,16 +291,14 @@ local function RemoverTextTextures()
     end)
 end
 
--- Monitoramento Inteligente: Remove se algo mudar ou entrar dentro do "workspace.Map"
+-- Monitoramento via pastas e subpastas de mapas ativos
 local mapFolder = workspace:WaitForChild("Map", 10)
 if mapFolder then
-    -- Detecta quando o mapa V2/Novo entra na pasta
     mapFolder.ChildAdded:Connect(function(child)
         task.wait(0.2)
         if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoRemoveTextures then 
             RemoverTextTextures() 
         end
-        -- Monitora internamente se o novo mapa carregar subpartes depois
         child.DescendantAdded:Connect(function(descendant)
             if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoRemoveTextures then
                 pcall(function() LimparObjeto(descendant) end)
@@ -302,7 +306,6 @@ if mapFolder then
         end)
     end)
     
-    -- Força a verificação caso o nome da pasta mude ou atualize de forma dinâmica
     mapFolder.Changed:Connect(function()
         task.wait(0.2)
         if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoRemoveTextures then 
@@ -386,7 +389,7 @@ local function HopToSmallServer()
     pcall(function() TeleportService:Teleport(game.PlaceId, Player) end)
 end
 
--- ─── LÓGICA DE AUTO COLETAR INTEGRADA ──────────────────────────────────
+-- LÓGICA DE AUTO COLETAR
 local function AutoColetar()
     while getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall do
         local character = Player.Character
@@ -417,7 +420,7 @@ local function AutoColetar()
     end
 end
 
--- ─── MONITORAMENTO DO HOP AUTOMÁTICO REFINADO ───────────────────────────
+-- MONITORAMENTO DO HOP AUTOMÁTICO REFINADO
 local function LoopAutoHopMonitor()
     task.spawn(AutoColetar) 
     
@@ -610,10 +613,11 @@ function CreateButton(text, callback)
     b.MouseButton1Click:Connect(callback)
 end
 
--- ─── SESSÃO DE BOTÕES FLUTUANTES (AFK & NOVO LIMPADOR) ───
+-- ─── SESSÃO DE BOTÕES FLUTUANTES COMPATÍVEIS COM EXECUTORES CORES ───
 getgenv().VikinzinZ_ManualSky = false
 local PanicGui = Instance.new("ScreenGui", CoreGui)
 PanicGui.Name = "VikinzinZ_Panic_Button"
+getgenv().VikinzinZ_PanicGui = PanicGui -- Salvo na memória global
 
 local PanicBtn = Instance.new("TextButton", PanicGui)
 PanicBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -625,13 +629,13 @@ PanicBtn.TextColor3 = Color3.new(1, 1, 1)
 PanicBtn.TextSize = 14
 Instance.new("UICorner", PanicBtn).CornerRadius = UDim.new(1, 0)
 
--- NOVO: Sistema Flutuante Limpador de Telas Duplicadas solicitado
 local LimpadorGui = Instance.new("ScreenGui", CoreGui)
 LimpadorGui.Name = "VikinzinZ_Limpador_Button"
+getgenv().VikinzinZ_LimpadorGui = LimpadorGui -- Salvo na memória global
 
 local LimparBtn = Instance.new("TextButton", LimpadorGui)
 LimparBtn.Size = UDim2.new(0, 42, 0, 42)
-LimparBtn.Position = UDim2.new(1, -60, 0, 130) -- Posicionado cirurgicamente logo abaixo do AFK
+LimparBtn.Position = UDim2.new(1, -60, 0, 130)
 LimparBtn.BackgroundColor3 = Color3.fromRGB(110, 50, 255)
 LimparBtn.Text = "Limpar"
 LimparBtn.Font = Enum.Font.SourceSansBold
@@ -639,36 +643,37 @@ LimparBtn.TextColor3 = Color3.new(1, 1, 1)
 LimparBtn.TextSize = 11
 Instance.new("UICorner", LimparBtn).CornerRadius = UDim.new(1, 0)
 
--- Texto Informativo/Dica Visual (Explicando utilidade para evitar confusão dos players)
+-- Caixa Informativa Reestilizada (Visível por Padrão para Orientação Crítica dos Usuários)
 local DicaTexto = Instance.new("TextLabel", LimparBtn)
-DicaTexto.Size = UDim2.new(0, 180, 0, 25)
-DicaTexto.Position = UDim2.new(-4.4, 0, 0.2, 0)
+DicaTexto.Size = UDim2.new(0, 175, 0, 28)
+DicaTexto.Position = UDim2.new(-4.3, 0, 0.2, 0)
 DicaTexto.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 DicaTexto.TextColor3 = Color3.fromRGB(220, 220, 255)
-DicaTexto.Font = "GothamMedium"
-DicaTexto.TextSize = 10
-DicaTexto.Text = "Remove telas clonadas / duplicadas"
-DicaTexto.Visible = false
-Instance.new("UICorner", DicaTexto).CornerRadius = UDim.new(0, 5)
+DicaTexto.Font = "GothamBold"
+DicaTexto.TextSize = 9
+DicaTexto.Text = "CLIQUE AQUI PARA APAGAR\nMENUS CLONADOS/DUPLICADOS"
+DicaTexto.Visible = true -- Mantido visível para ninguém se perder
+Instance.new("UICorner", DicaTexto).CornerRadius = UDim.new(0, 6)
 local DicaStroke = Instance.new("UIStroke", DicaTexto)
 DicaStroke.Color = Color3.fromRGB(110, 50, 255)
+DicaStroke.Thickness = 1.2
 
-LimparBtn.MouseEnter:Connect(function() DicaTexto.Visible = true end)
-LimparBtn.MouseLeave:Connect(function() DicaTexto.Visible = false end)
-
--- Lógica Bruta de ativação do Botão "Limpar"
-LimparBtn.MouseButton1Click:Connect(function()
-    LimparMenusDuplicados()
-    -- Feedback visual rápido de sucesso no botão
-    local textoOriginal = LimparBtn.Text
-    LimparBtn.Text = "Pronto!"
-    LimparBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
-    task.wait(1)
-    LimparBtn.Text = textoOriginal
-    LimparBtn.BackgroundColor3 = Color3.fromRGB(110, 50, 255)
+-- Oculta automaticamente após 8 segundos para despoluir a tela do jogador
+task.delay(8, function()
+    if DicaTexto and DicaTexto.Parent then
+        DicaTexto.Visible = false
+        -- Reativa apenas ao passar o mouse
+        LimparBtn.MouseEnter:Connect(function() DicaTexto.Visible = true end)
+        LimparBtn.MouseLeave:Connect(function() DicaTexto.Visible = false end)
+    end
 end)
 
--- Arrastadores Independentes dos Botões Flutuantes
+-- Clique Inteligente com Limpeza Total via Memória Compartilhada
+LimparBtn.MouseButton1Click:Connect(function()
+    LimparTelasDuplicadasDefinitivo()
+end)
+
+-- Arrastadores dos Botões Flutuantes
 local pDrag, pStart, pPos
 PanicBtn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then pDrag = true pStart = i.Position pPos = PanicBtn.Position end end)
 UIS.InputChanged:Connect(function(i) if pDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - pStart PanicBtn.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + delta.X, pPos.Y.Scale, pPos.Y.Offset + delta.Y) end end)
@@ -754,7 +759,7 @@ end)
 
 CreateButton("Remover Texturas e VFX Agora 🔧", function() RemoverTextTextures() end)
 
--- Arrastadores Mecânicos Tradicionais dos Menus
+-- Arrastadores dos Menus
 local MainDrag, mStart, mPos = false
 Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then MainDrag = true mStart = i.Position mPos = Main.Position end end)
 UIS.InputChanged:Connect(function(i) if MainDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - mStart Main.Position = UDim2.new(mPos.X.Scale, mPos.X.Offset + delta.X, mPos.Y.Scale, mPos.Y.Offset + delta.Y) end end)
@@ -775,8 +780,11 @@ StateBtn.MouseButton1Click:Connect(function()
 end)
 
 Close.MouseButton1Click:Connect(function() 
-    VikinzinZ:Destroy() PanicGui:Destroy() LimpadorGui:Destroy() SetGhostMode(false)
-    if AntiLavaPlatform then AntiLavaPlatform:Destroy() end getgenv().VikinzinZ_Carregado = nil
+    if getgenv().VikinzinZ_MainGui then getgenv().VikinzinZ_MainGui:Destroy() end
+    if getgenv().VikinzinZ_PanicGui then getgenv().VikinzinZ_PanicGui:Destroy() end
+    if getgenv().VikinzinZ_LimpadorGui then getgenv().VikinzinZ_LimpadorGui:Destroy() end
+    SetGhostMode(false)
+    if AntiLavaPlatform then AntiLavaPlatform:Destroy() end
 end)
 
 game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(State)
