@@ -341,8 +341,9 @@ local function HopToSmallServer()
     pcall(function() TeleportService:Teleport(game.PlaceId, Player) end)
 end
 
--- ─── LÓGICA: ÍMÃ DE BANANAS ULTRA INSTANTÂNEO ────────────────────
+-- ─── LÓGICA REFEITA: ÍMÃ SUPORTA COLETA DIRECTA PELO HOP SMALL ─────
 local function AutoColetar()
+    -- O loop continua ativo se o Ímã OU o Hop Small estiverem ligados
     while getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall do
         local character = Player.Character
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
@@ -352,14 +353,19 @@ local function AutoColetar()
             for _, b in pairs(bananasFolder:GetChildren()) do
                 if b:IsA("BasePart") then
                     b.CFrame = hrp.CFrame
-                elseif b:IsA("Model") then
-                    b:ScaleTo(1)
-                    b:PivotTo(hrp.CFrame)
-                end
                 local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
                 if touch and character:FindFirstChild("LeftFoot") then
                     firetouchinterest(character.LeftFoot, b, 0)
                     firetouchinterest(character.LeftFoot, b, 1)
+                end
+                elseif b:IsA("Model") then
+                    b:ScaleTo(1)
+                    b:PivotTo(hrp.CFrame)
+                local touch = b:FindFirstChildWhichIsA("TouchInterest", true)
+                if touch and character:FindFirstChild("LeftFoot") then
+                    firetouchinterest(character.LeftFoot, b, 0)
+                    firetouchinterest(character.LeftFoot, b, 1)
+                end
                 end
             end
         end
@@ -367,9 +373,9 @@ local function AutoColetar()
     end
 end
 
--- ─── MONITORAMENTO DO HOP AUTOMÁTICO REFINADO ───────────────────
+-- ─── MONITORAMENTO DO HOP AUTOMÁTICO COM INTEGRAL DE COLETA ──────
 local function LoopAutoHopMonitor()
-    -- Garante que o ímã de coletar seja ligado instantaneamente junto com o Hop Small
+    -- Sempre força a execução da coleta no exato momento que ativa o monitor do Hop
     task.spawn(AutoColetar)
     
     while getgenv().VikinzinZ_Storage.AutoHopSmall do
@@ -384,8 +390,9 @@ local function LoopAutoHopMonitor()
             end
         end
         
-        -- Se não restarem mais bananas no mapa, ele salva a configuração e pula de servidor
+        -- Se o mapa zerar, espera 1 segundo para sugar os últimos resíduos e teleporta
         if totalBananas == 0 and getgenv().VikinzinZ_Storage.AutoHopSmall then
+            task.wait(1.0)
             SaveConfig(getgenv().VikinzinZ_Storage)
             HopToSmallServer()
             break 
@@ -700,7 +707,7 @@ game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(State)
 end)
 
 -- Ativadores Iniciais Automáticos salvos
-if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(0.5) task.spawn(AutoColetar) end
+if getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoHopSmall then task.wait(0.5) task.spawn(AutoColetar) end
 if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.wait(0.5) task.spawn(LoopMiniMenuFunes) end
 if getgenv().VikinzinZ_Storage.AutoRemoveTextures then task.wait(0.5) RemoverTextTextures() end
 if getgenv().VikinzinZ_Storage.AutoBuy1Case then task.wait(0.5) task.spawn(LoopAutoBuy1) end
