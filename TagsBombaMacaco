@@ -42,7 +42,6 @@ getgenv().VikinzinZ_Storage = LoadConfig()
 
 -- ─── SISTEMA ULTRA AUTO RE-EXECUTE (APENAS SE ATIVADO) ──────────────────
 local function AplicarAutoExecuteTeleport()
-    -- Garante estritamente que a função SÓ roda se o botão estiver ativado
     if getgenv().VikinzinZ_Storage and getgenv().VikinzinZ_Storage.AutoExecute == true then
         local scriptRaw = [[
             repeat task.wait() until game:IsLoaded()
@@ -825,11 +824,17 @@ game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(State)
     end
 end)
 
--- Ativadores pós-load automáticos (Configs Salvas)
-if getgenv().VikinzinZ_Storage.AutoBanana then task.wait(0.5) task.spawn(AutoColetar) end
-if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.wait(0.5) task.spawn(LoopMiniMenuFunes) end
-if getgenv().VikinzinZ_Storage.AutoRemoveTextures then task.wait(0.5) RemoverTextTextures() end
-if getgenv().VikinzinZ_Storage.AutoBuy1Case then task.wait(0.5) task.spawn(LoopAutoBuy1) end
-if getgenv().VikinzinZ_Storage.AutoBuy5Case then task.wait(0.5) task.spawn(LoopAutoBuy5) end
-if getgenv().VikinzinZ_Storage.AutoHopSmall then task.wait(0.5) task.spawn(LoopAutoHopMonitor) end
-if getgenv().VikinzinZ_Storage.AutoExecute then task.spawn(AplicarAutoExecuteTeleport) end
+-- Ativadores pós-load automáticos corrigidos (Garante carregamento do mapa antes de rodar)
+task.spawn(function()
+    if getgenv().VikinzinZ_Storage.AutoBanana or getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb or getgenv().VikinzinZ_Storage.AutoRemoveTextures or getgenv().VikinzinZ_Storage.AutoHopSmall then
+        repeat task.wait() until game:IsLoaded()
+    end
+    
+    if getgenv().VikinzinZ_Storage.AutoRemoveTextures then RemoverTextTextures() end
+    if getgenv().VikinzinZ_Storage.AutoBanana then task.spawn(AutoColetar) end
+    if getgenv().VikinzinZ_Storage.AutoAntiBomb or getgenv().VikinzinZ_Storage.AutoFugaBomb then task.spawn(LoopMiniMenuFunes) end
+    if getgenv().VikinzinZ_Storage.AutoBuy1Case then task.spawn(LoopAutoBuy1) end
+    if getgenv().VikinzinZ_Storage.AutoBuy5Case then task.spawn(LoopAutoBuy5) end
+    if getgenv().VikinzinZ_Storage.AutoHopSmall then task.spawn(LoopAutoHopMonitor) end
+    if getgenv().VikinzinZ_Storage.AutoExecute then task.spawn(AplicarAutoExecuteTeleport) end
+end)
