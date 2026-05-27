@@ -1,0 +1,122 @@
+-- ==========================================
+-- ⚡ LOCK-ON (MINI MENU ULTRA COMPACTO)
+-- ==========================================
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local Locked = false
+local LockedTarget = nil
+local LockConnection = nil
+
+-- Funções de Lock
+local function GetClosestTarget()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    local closest, shortDist = nil, math.huge
+    local liveFolder = Workspace:FindFirstChild("Live") or Workspace
+    for _, obj in pairs(liveFolder:GetChildren()) do
+        if obj:IsA("Model") and obj ~= LocalPlayer.Character then
+            local hum = obj:FindFirstChild("Humanoid")
+            local targetRoot = obj:FindFirstChild("HumanoidRootPart")
+            if hum and hum.Health > 0 and targetRoot then
+                local dist = (root.Position - targetRoot.Position).Magnitude
+                if dist < shortDist then shortDist = dist; closest = obj end
+            end
+        end
+    end
+    return closest
+end
+
+function DisableLock()
+    Locked = false; LockedTarget = nil
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.AutoRotate = true end
+    if LockConnection then LockConnection:Disconnect(); LockConnection = nil end
+end
+
+function EnableLock()
+    LockedTarget = GetClosestTarget()
+    if not LockedTarget then return false end
+    Locked = true
+    LockConnection = RunService.Heartbeat:Connect(function()
+        if not Locked or not LockedTarget or not LockedTarget:FindFirstChild("HumanoidRootPart") then DisableLock(); return end
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            local targetPart = LockedTarget.HumanoidRootPart
+            LocalPlayer.Character.Humanoid.AutoRotate = false
+            root.CFrame = CFrame.lookAt(root.Position, Vector3.new(targetPart.Position.X, root.Position.Y, targetPart.Position.Z))
+        end
+    end)
+    return true
+end
+
+-- ==========================================
+-- DESIGN MINI MENU ULTRA COMPACTO
+-- ==========================================
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local MiniMain = Instance.new("Frame", ScreenGui)
+MiniMain.Name = "MiniMenuLockCompact"
+MiniMain.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+MiniMain.Position = UDim2.new(0.5, -70, 0.4, 0) -- Centralizado por padrão
+MiniMain.Size = UDim2.new(0, 140, 0, 65) -- Tamanho reduzido drasticamente
+Instance.new("UICorner", MiniMain).CornerRadius = UDim.new(0, 8)
+local MiniStroke = Instance.new("UIStroke", MiniMain)
+MiniStroke.Color = Color3.fromRGB(110, 50, 255)
+MiniStroke.Thickness = 1.5
+
+local MiniHeader = Instance.new("Frame", MiniMain)
+MiniHeader.Size = UDim2.new(1, 0, 0, 22)
+MiniHeader.BackgroundTransparency = 1
+
+local MiniTitle = Instance.new("TextLabel", MiniHeader)
+MiniTitle.Text = "LOCK-ON"
+MiniTitle.Font = "GothamBold"
+MiniTitle.TextSize = 10 -- Texto menor para caber perfeitamente
+MiniTitle.TextColor3 = Color3.fromRGB(140, 100, 255)
+MiniTitle.Position = UDim2.new(0, 10, 0, 0)
+MiniTitle.Size = UDim2.new(1, -10, 1, 0)
+MiniTitle.TextXAlignment = "Left"
+MiniTitle.BackgroundTransparency = 1
+
+-- Botão de Ativação Centralizado e Pequeno
+local ToggleBtn = Instance.new("TextButton", MiniMain)
+ToggleBtn.Size = UDim2.new(1, -20, 0, 28)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 26)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+ToggleBtn.Text = "STATUS: OFF"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.Font = "GothamBold"
+ToggleBtn.TextSize = 10
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
+
+-- Lógica de Arraste (Mantida idêntica para não bugar)
+local MiniDrag, miStart, miPos = false
+MiniMain.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then MiniDrag = true miStart = i.Position miPos = MiniMain.Position end end)
+UIS.InputChanged:Connect(function(i) if MiniDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - miStart MiniMain.Position = UDim2.new(miPos.X.Scale, miPos.X.Offset + delta.X, miPos.Y.Scale, miPos.Y.Offset + delta.Y) end end)
+UIS.InputEnded:Connect(function() MiniDrag = false end)
+
+-- Ação do Botão
+ToggleBtn.MouseButton1Click:Connect(function()
+    if not Locked then
+        if EnableLock() then
+            ToggleBtn.Text = "Alvo: " .. LockedTarget.Name
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(110, 50, 255)
+        else
+            ToggleBtn.Text = "SEM ALVO"
+            task.wait(1)
+            ToggleBtn.Text = "STATUS: OFF"
+        end
+    else
+        DisableLock()
+        ToggleBtn.Text = "STATUS: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if Locked and LockedTarget and LockedTarget:FindFirstChild("Humanoid") and LockedTarget.Humanoid.Health > 0 then
+        ToggleBtn.Text = "Alvo: " .. LockedTarget.Name
+    end
+end)
